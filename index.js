@@ -43,6 +43,23 @@ io.on('connection', socket => {
   socket.on('move-played', (pieceOnField) => {
     socket.broadcast.emit('piece-on-field', pieceOnField)
   })
+
+  socket.on('choosen-side', color => {
+    socket.broadcast.emit('player-choosen-color', color)
+  })
+
+  socket.on('choosen-time', choosenRange => {
+    socket.broadcast.emit('player-choosen-time', choosenRange)
+  })
+
+  socket.on('restart-game', () => {
+    socket.broadcast.emit('player-restarted-game')
+  })
+
+  socket.on('player-accepting-restart', () => {
+    socket.broadcast.emit('player-accepted-restart')
+  })
+
 })
 
 server.listen(PORT, () => {
