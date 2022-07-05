@@ -1,5 +1,4 @@
 import express from 'express'
-import { instrument } from '@socket.io/admin-ui'
 import { Server } from 'socket.io'
 import http from 'http'
 import cors from 'cors'
@@ -10,7 +9,7 @@ app.use(cors())
 
 const server = http.createServer(app)
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3001
 
 const io = new Server(server, {
   cors: {
@@ -22,48 +21,82 @@ const io = new Server(server, {
 const rooms = {}
 
 io.on('connection', socket => {
+
+  let currentRoomID = ''
+
   socket.emit('hi', 'connected to socket')
-  socket.on('new-game-ID', (socketID, roomID) => {
-    rooms.roomID = [socketID]
+
+  socket.on('new-game-ID', (roomID) => createNewRoom(roomID))
+
+  socket.on('connect-to-game', (roomID) => connectToGame(roomID))
+
+  socket.on('move-played', (pieceOnField) => sendPlayedMove(pieceOnField))
+
+  socket.on('choosen-side', color => sendChoosenColor(color))
+
+  socket.on('choosen-time', choosenRange => sendChoosenTime(choosenRange))
+
+  socket.on('restart-game', () => sendRestartRequest())
+
+  socket.on('player-accepting-restart', () => acceptRestart())
+
+  socket.on('disconnect', () => disconnect(currentRoomID))
+  
+  function createNewRoom(roomID) {
+    rooms[roomID] = [socket.id]
     socket.join(roomID)
-  })
-
-  socket.on('connect-to-game', (roomID) => {
-
-    if (rooms.roomID?.length < 2) {
-      rooms.roomID.push(socket.id)
-      socket.join(roomID)
-      socket.to(roomID).emit('player-joined', 'player joined')
-    } else {
-      socket.emit('room-is-full', 'Sorry, seems this room is full!')
+  }
+  
+  function connectToGame(roomID) {
+    if (!rooms[roomID] || !roomID) {
+      socket.emit('room-error', 'Sorry, seems this room is not exist!')
       return
     }
-  })
-
-  socket.on('move-played', (pieceOnField) => {
+  
+    if (rooms[roomID]?.length > 2) {
+      socket.emit('room-error', 'Sorry, seems this room is full!')
+      return
+    }
+  
+    rooms[roomID].push(socket.id)
+    socket.join(roomID)
+    socket.emit('room-valid')
+    currentRoomID = roomID
+    socket.to(roomID).emit('player-joined', 'player joined')
+  }
+  
+  function sendPlayedMove(pieceOnField) {
     socket.broadcast.emit('piece-on-field', pieceOnField)
-  })
-
-  socket.on('choosen-side', color => {
+  }
+  
+  function sendChoosenColor(color) {
     socket.broadcast.emit('player-choosen-color', color)
-  })
-
-  socket.on('choosen-time', choosenRange => {
+  }
+  
+  function sendChoosenTime(choosenRange) {
     socket.broadcast.emit('player-choosen-time', choosenRange)
-  })
-
-  socket.on('restart-game', () => {
+  }
+  
+  function sendRestartRequest() {
     socket.broadcast.emit('player-restarted-game')
-  })
-
-  socket.on('player-accepting-restart', () => {
+  }
+  
+  function acceptRestart() {
     socket.broadcast.emit('player-accepted-restart')
-  })
-
+  }
+  
+  function disconnect(currentRoomID) {
+    if (rooms?.[currentRoomID]) {
+      const indexOfSocket = rooms[currentRoomID].indexOf(socket.id)
+      rooms[currentRoomID].splice(indexOfSocket, 1)
+      currentRoomID = ''
+    }
+  }
 })
+
+
+
 
 server.listen(PORT, () => {
   console.log('server started!');
 })
-
-instrument(io, { auth: false })
