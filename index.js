@@ -36,9 +36,11 @@ io.on('connection', socket => {
 
   socket.on('choosen-time', choosenRange => sendChoosenTime(choosenRange))
 
-  socket.on('restart-game', () => sendRestartRequest())
+  socket.on('restart-game', sendRestartRequest)
 
-  socket.on('player-accepting-restart', () => acceptRestart())
+  socket.on('player-accepting-restart', acceptRestart)
+
+  socket.on('send-message', (msg) => sendMessage(msg))
 
   socket.on('disconnect', () => disconnect(currentRoomID))
   
@@ -83,6 +85,10 @@ io.on('connection', socket => {
   
   function acceptRestart() {
     socket.broadcast.emit('player-accepted-restart')
+  }
+
+  function sendMessage(msg) {
+    socket.broadcast.emit('new-message', msg)
   }
   
   function disconnect(currentRoomID) {
