@@ -49,6 +49,7 @@ app.use(
     cookieSession({
         signed: false,
         secure: process.env.NODE_ENV !== 'test',
+        maxAge: parseInt(process.env.COOKIE_EXPIRES_IN_DAYS || '14') * 24 * 60 * 60 * 1000,
     })
 )
 
