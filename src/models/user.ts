@@ -3,11 +3,11 @@ import { Password } from '../helpers/password'
 import { encrypt } from '../helpers/encrypt'
 
 interface UserAttrs {
-  email: string
-  password: string
-  passwordConfirm: string
-  photo?: string
-  role?: string
+    email: string
+    password: string
+    passwordConfirm: string
+    photo?: string
+    role?: string
 }
 
 interface UserModel extends mongoose.Model<UserDoc> {
@@ -23,14 +23,17 @@ interface UserDoc extends mongoose.Document {
     passwordChangedAt?: Date
     passwordResetToken?: string
     passwordResetExpires?: string
+    correctPassword: (
+        storedPassword: string,
+        candidatePassword: string
+    ) => Promise<boolean>
+    createPasswordResetToken: () => string
 }
-
 
 const userSchema = new mongoose.Schema(
     {
         name: {
             type: String,
-            required: [true, 'User must have a name'],
             trim: true,
             maxLength: [20, 'User name max length is 20 chahacters'],
             minLength: [3, 'User name min length is 3 characters'],
@@ -52,7 +55,6 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: [true, 'User must have a password'],
             min: 8,
-            select: false,
         },
         passwordConfirm: {
             type: String,
@@ -111,10 +113,10 @@ userSchema.pre('save', function (next) {
 })
 
 userSchema.methods.correctPassword = async (
-    candidatePassword: string,
-    userPassword: string
+    storedPassword: string,
+    candidatePassword: string
 ) => {
-    return await Password.compare(userPassword, candidatePassword)
+    return await Password.compare(storedPassword, candidatePassword)
 }
 
 userSchema.methods.changedPasswordAfter = function (JWTTimepstamp: number) {

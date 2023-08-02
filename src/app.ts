@@ -11,24 +11,27 @@ import ExpressMongoSanitize from 'express-mongo-sanitize'
 import xss from 'xss-clean'
 import hpp from 'hpp'
 import cors from 'cors'
+import morgan from 'morgan'
 
 export const app = express()
 
+app.use(morgan('dev'))
+
 app.use(cors())
 
-app.options('*', cors())
+app.options(process.env.FRONTEND_CORS_DOMAIN!, cors())
 
 app.use(helmet())
 
-app.set('trust proxy', true)
+if (process.env.NODE_ENV === 'prod') {
+    const limiter = rateLimit({
+        max: 300,
+        windowMs: 60 * 60 * 1000,
+        message: 'Too many requests from this IP. Try again in 1 hour',
+    })
 
-const limiter = rateLimit({
-    max: 500,
-    windowMs: 60 * 60 * 1000,
-    message: 'Too many requests from this IP. Try again in 1 hour',
-})
-
-app.use('/api', limiter)
+    app.use('/api', limiter)
+}
 
 app.use(express.json({ limit: '10kb' }))
 
@@ -38,7 +41,7 @@ app.use(xss())
 
 app.use(
     hpp({
-        whitelist: []
+        whitelist: [],
     })
 )
 

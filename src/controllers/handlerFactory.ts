@@ -57,10 +57,7 @@ export const getOne =
 export const getAll =
     <ModelDoc>(Model: Model<ModelDoc>) =>
     async (req: Request, res: Response, next: NextFunction) => {
-        const docs = await new ApiFeatures(
-            Model.find(),
-            req.query
-        )
+        const docs = await new ApiFeatures(Model.find(), req.query)
             .sort()
             .limit()
             .paginate()
