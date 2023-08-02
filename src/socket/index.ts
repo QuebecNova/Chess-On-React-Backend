@@ -1,15 +1,10 @@
-import express from 'express'
 import { Server } from 'socket.io'
 import http from 'http'
-import cors from 'cors'
-
-const app = express()
-
-app.use(cors())
+import { app } from '../app'
 
 const server = http.createServer(app)
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.SOCKET_PORT || 3002
 
 const io = new Server(server, {
   cors: {
@@ -18,11 +13,11 @@ const io = new Server(server, {
   }
 })
 
-const rooms = {}
+const rooms: {[key: string]: string[]} = {}
 
 io.on('connection', socket => {
 
-  let currentRoomID = ''
+  let currentRoomID: string = ''
 
   socket.emit('hi', 'connected to socket')
 
@@ -44,12 +39,12 @@ io.on('connection', socket => {
 
   socket.on('disconnect', () => disconnect(currentRoomID))
   
-  function createNewRoom(roomID) {
+  function createNewRoom(roomID: string) {
     rooms[roomID] = [socket.id]
     socket.join(roomID)
   }
   
-  function connectToGame(roomID) {
+  function connectToGame(roomID: string) {
     if (!rooms[roomID] || !roomID) {
       socket.emit('room-error', 'Sorry, seems this room is not exist!')
       return
@@ -100,9 +95,6 @@ io.on('connection', socket => {
   }
 })
 
-
-
-
 server.listen(PORT, () => {
-  console.log('server started!');
+  console.log('Socket started on port ' + PORT);
 })
